@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Color Catcher Game</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #222;
+      font-family: Arial, sans-serif;
+    }
+    
+    #game-container {
+      position: relative;
+      width: 400px;
+      height: 600px;
+      background-color: #333;
+      overflow: hidden;
+      border-radius: 10px;
+    }
+    
+    #player {
+      position: absolute;
+      bottom: 20px;
+      width: 80px;
+      height: 20px;
+      background-color: red;
+      left: 50%;
+      transform: translateX(-50%);
+      transition: background-color 0.3s;
+    }
+    
+    .falling-block {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      top: -40px;
+    }
+    
+    #score-container {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-size: 20px;
+    }
+    
+    #lives-container {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      color: white;
+      font-size: 20px;
+    }
+    
+    #game-over {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 36px;
+      display: none;
+    }
+    
+    #restart-button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 18px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    
+    #color-buttons {
+      position: absolute;
+      bottom: 60px;
+      left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    .color-button {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid black;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div id="score-container">Score: <span id="score">0</span></div>
+    <div id="lives-container">Lives: <span id="lives">3</span></div>
+    <div id="player"></div>
+    <div id="color-buttons">
+      <div class="color-button" style="background-color: red;" onclick="changePlayerColor('red')"></div>
+      <div class="color-button" style="background-color: blue;" onclick="changePlayerColor('blue')"></div>
+      <div class="color-button" style="background-color: green;" onclick="changePlayerColor('green')"></div>
+      <div class="color-button" style="background-color: yellow;" onclick="changePlayerColor('yellow')"></div>
+    </div>
+    <div id="game-over">
+      Game Over!
+      <div>Final Score: <span id="final-score">0</span></div>
+      <button id="restart-button" onclick="restartGame()">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    const player = document.getElementById('player');
+    const gameContainer = document.getElementById('game-container');
+    const scoreElement = document.getElementById('score');
+    const livesElement = document.getElementById('lives');
+    const gameOverElement = document.getElementById('game-over');
+    const finalScoreElement = document.getElementById('final-score');
+    
+    let playerColor = 'red';
+    let score = 0;
+    let lives = 3;
+    let gameRunning = true;
+    let fallingBlocks = [];
+    let gameSpeed = 2000; // Time between block spawns in ms
+    let blockSpeed = 3; // Speed of falling blocks
+    
+    const colors = ['red', 'blue', 'green', 'yellow'];
+    
+    function changePlayerColor(color) {
+      playerColor = color;
+      player.style.backgroundColor = color;
+    }
+    
+    function createFallingBlock() {
+      if (!gameRunning) return;
+      
+      const block = document.createElement('div');
+      block.className = 'falling-block';
+      
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      block.style.backgroundColor = randomColor;
+      block.dataset.color = randomColor;
+      
+      const maxX = gameContainer.offsetWidth - 40;
+      const randomX = Math.floor(Math.random() * maxX);
+      block.style.left = randomX + 'px';
+      
+      gameContainer.appendChild(block);
+      fallingBlocks.push(block);
+      
+      // Increase difficulty over time
+      if (gameSpeed > 500) {
+        gameSpeed -= 50;
+      }
+      if (blockSpeed < 8) {
+        blockSpeed += 0.1;
+      }
+      
+      setTimeout(createFallingBlock, gameSpeed);
+    }
+    
+    function moveFallingBlocks() {
+      if (!gameRunning) return;
+      
+      fallingBlocks.forEach((block, index) => {
+        const blockY = block.offsetTop;
+        block.style.top = (blockY + blockSpeed) + 'px';
+        
+        // Check if block is at player level
+        if (blockY >= player.offsetTop - 40 && blockY <= player.offsetTop) {
+          const blockX = block.offsetLeft;
+          const playerX = player.offsetLeft;
+          
+          // Check if block is over player
+          if (blockX + 40 >= playerX && blockX <= playerX + 80) {
+            // Check if colors match
+            if (block.dataset.color === playerColor) {
+              // Match! Remove block and add score
+              block.remove();
+              fallingBlocks.splice(index, 1);
+              score += 10;
+              scoreElement.textContent = score;
+            }
+          }
+        }
+        
+        // Check if block has passed the player
+        if (blockY > player.offsetTop + 20) {
+          // Check if block was not caught and colors matched
+          if (block.dataset.color === playerColor) {
+            lives--;
+            livesElement.textContent = lives;
+            
+            if (lives <= 0) {
+              gameOver();
+            }
+          }
+          
+          // Remove block
+          block.remove();
+          fallingBlocks.splice(index, 1);
+        }
+      });
+      
+      requestAnimationFrame(moveFallingBlocks);
+    }
+    
+    function gameOver() {
+      gameRunning = false;
+      finalScoreElement.textContent = score;
+      gameOverElement.style.display = 'flex';
+    }
+    
+    function restartGame() {
+      score = 0;
+      lives = 3;
+      gameSpeed = 2000;
+      blockSpeed = 3;
+      scoreElement.textContent = score;
+      livesElement.textContent = lives;
+      gameOverElement.style.display = 'none';
+      
+      // Remove all falling blocks
+      fallingBlocks.forEach(block => block.remove());
+      fallingBlocks = [];
+      
+      gameRunning = true;
+      createFallingBlock();
+      moveFallingBlocks();
+    }
+    
+    // Add keyboard controls
+    document.addEventListener('keydown', (event) => {
+      if (!gameRunning) return;
+      
+      const key = event.key;
+      const playerWidth = player.offsetWidth;
+      const containerWidth = gameContainer.offsetWidth;
+      let playerX = player.offsetLeft;
+      
+      switch (key) {
+        case 'ArrowLeft':
+          playerX = Math.max(playerX - 20, 0);
+          break;
+        case 'ArrowRight':
+          playerX = Math.min(playerX + 20, containerWidth - playerWidth);
+          break;
+        case '1':
+          changePlayerColor('red');
+          break;
+        case '2':
+          changePlayerColor('blue');
+          break;
+        case '3':
+          changePlayerColor('green');
+          break;
+        case '4':
+          changePlayerColor('yellow');
+          break;
+      }
+      
+      player.style.left = playerX + 'px';
+    });
+    
+    // Start the game
+    createFallingBlock();
+    moveFallingBlocks();
+    
+    // Touch controls for mobile
+    let touchStartX = 0;
+    gameContainer.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+    });
+    
+    gameContainer.addEventListener('touchmove', (e) => {
+      if (!gameRunning) return;
+      
+      const touchX = e.touches[0].clientX;
+      const diff = touchX - touchStartX;
+      touchStartX = touchX;
+      
+      const playerWidth = player.offsetWidth;
+      const containerWidth = gameContainer.offsetWidth;
+      let playerX = player.offsetLeft + diff;
+      
+      playerX = Math.max(0, Math.min(playerX, containerWidth - playerWidth));
+      player.style.left = playerX + 'px';
+      
+      e.preventDefault();
+    });
+  </script>
+</body>
+</html>
