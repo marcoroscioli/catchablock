@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Despicable Me Merge Game</title>
+    <title>Despicable Me Merge111</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,7 +13,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             background-image: linear-gradient(to bottom, #4a90e2, #6ac0ff);
             color: #333;
         }
@@ -99,12 +99,16 @@
             padding: 10px 20px;
             border-radius: 20px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: flex;
+            gap: 10px;
         }
         
         .controls {
             margin-top: 20px;
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
         
         button {
@@ -128,12 +132,19 @@
             color: white;
         }
         
+        .merge-all-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        
         .character-guide {
             margin-top: 20px;
             background-color: rgba(255, 255, 255, 0.8);
             padding: 10px;
             border-radius: 10px;
             max-width: 360px;
+            max-height: 200px;
+            overflow-y: auto;
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
@@ -152,6 +163,28 @@
         .guide-item span {
             margin-left: 5px;
         }
+        
+        .toggle-guide-btn {
+            background-color: #2196f3;
+            color: white;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .level-selector {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        select {
+            padding: 5px 10px;
+            border-radius: 10px;
+            border: 2px solid #ffde00;
+        }
     </style>
 </head>
 <body>
@@ -164,18 +197,32 @@
     </div>
     
     <div class="score-container">
-        <span>Score: </span><span id="score">0</span>
+        <div>
+            <span>Score: </span><span id="score">0</span>
+        </div>
+        <div>
+            <span>Highest Level: </span><span id="highestLevel">1</span>
+        </div>
+    </div>
+    
+    <div class="level-selector">
+        <label for="itemLevel">Add Level:</label>
+        <select id="itemLevel"></select>
     </div>
     
     <div class="controls">
         <button class="new-item-btn" id="newItemBtn">Add Minion</button>
+        <button class="merge-all-btn" id="mergeAllBtn">Merge All</button>
         <button id="resetBtn">Reset Game</button>
+        <button class="toggle-guide-btn" id="toggleGuideBtn">Show/Hide Character Guide</button>
     </div>
     
     <div class="character-guide" id="characterGuide"></div>
     
     <script>
+        // Create an extended character list with 111 characters (original 11 + 100 more)
         const characters = [
+            // Original characters
             { name: "Stuart", emoji: "👁", color: "#ffde00", level: 1 },
             { name: "Kevin", emoji: "👓", color: "#ffde00", level: 2 },
             { name: "Bob", emoji: "👶", color: "#ffde00", level: 3 },
@@ -186,27 +233,77 @@
             { name: "Gru", emoji: "🧣", color: "#333333", level: 8 },
             { name: "Vector", emoji: "🦈", color: "#ff9800", level: 9 },
             { name: "Lucy", emoji: "👩‍🦰", color: "#e91e63", level: 10 },
-            { name: "El Macho", emoji: "💪", color: "#9c27b0", level: 11 },
+            { name: "El Macho", emoji: "💪", color: "#9c27b0", level: 11 }
         ];
         
+        // Extended character list (adding 100 more)
+        const emojiPool = [
+            "😀", "😁", "😂", "🤣", "😃", "😄", "😅", "😆", "😉", "😊", 
+            "😋", "😎", "😍", "😘", "🥰", "😗", "😙", "😚", "🙂", "🤗", 
+            "🤩", "🤔", "🤨", "😐", "😑", "😶", "🙄", "😏", "😣", "😥", 
+            "😮", "🤐", "😯", "😪", "😫", "🥱", "😴", "😌", "😛", "😜", 
+            "😝", "🤤", "😒", "😓", "😔", "😕", "🙃", "🤑", "😲", "🙁", 
+            "😖", "😞", "😟", "😤", "😢", "😭", "😦", "😧", "😨", "😩", 
+            "🤯", "😬", "😰", "😱", "🥵", "🥶", "😳", "🤪", "😵", "🥴", 
+            "😠", "😡", "🤬", "😷", "🤒", "🤕", "🤢", "🤮", "🤧", "😇", 
+            "🥳", "🥺", "🤠", "🤡", "🤥", "🤫", "🤭", "🧐", "🤓", "😈", 
+            "👿", "👹", "👺", "💀", "☠️", "👻", "👽", "👾", "🤖", "💩"
+        ];
+        
+        const colorPool = [
+            "#ffde00", "#ff5722", "#e91e63", "#9c27b0", "#673ab7", 
+            "#3f51b5", "#2196f3", "#03a9f4", "#00bcd4", "#009688", 
+            "#4caf50", "#8bc34a", "#cddc39", "#ffeb3b", "#ffc107", 
+            "#ff9800", "#795548", "#607d8b", "#f44336", "#9e9e9e"
+        ];
+        
+        // Generate additional 100 characters
+        for (let i = 12; i <= 111; i++) {
+            const randomEmoji = emojiPool[(i - 12) % emojiPool.length];
+            const randomColor = colorPool[i % colorPool.length];
+            characters.push({
+                name: `Character ${i}`,
+                emoji: randomEmoji,
+                color: randomColor,
+                level: i
+            });
+        }
+        
         let score = 0;
+        let highestLevel = 1;
         let draggingItem = null;
         let items = [];
         let nextItemId = 0;
         const gameBoard = document.getElementById('gameBoard');
         const scoreDisplay = document.getElementById('score');
+        const highestLevelDisplay = document.getElementById('highestLevel');
         const newItemBtn = document.getElementById('newItemBtn');
+        const mergeAllBtn = document.getElementById('mergeAllBtn');
         const resetBtn = document.getElementById('resetBtn');
         const characterGuide = document.getElementById('characterGuide');
+        const toggleGuideBtn = document.getElementById('toggleGuideBtn');
+        const itemLevelSelect = document.getElementById('itemLevel');
         
         // Initialize the game
         function initGame() {
             // Add event listeners
-            newItemBtn.addEventListener('click', addNewItem);
+            newItemBtn.addEventListener('click', () => {
+                const selectedLevel = parseInt(itemLevelSelect.value);
+                addNewItem(selectedLevel);
+            });
+            
+            mergeAllBtn.addEventListener('click', mergeAllItems);
             resetBtn.addEventListener('click', resetGame);
+            toggleGuideBtn.addEventListener('click', toggleCharacterGuide);
+            
+            // Create level selector
+            populateLevelSelector();
             
             // Create character guide
             createCharacterGuide();
+            
+            // Hide guide initially
+            characterGuide.classList.add('hidden');
             
             // Add initial items
             for (let i = 0; i < 3; i++) {
@@ -214,6 +311,23 @@
             }
             
             updateScore(0);
+            updateHighestLevel(1);
+        }
+        
+        // Populate level selector
+        function populateLevelSelector() {
+            // Populate with first 10 levels
+            for (let i = 1; i <= 10; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `Level ${i}: ${characters[i-1].name}`;
+                itemLevelSelect.appendChild(option);
+            }
+        }
+        
+        // Toggle character guide visibility
+        function toggleCharacterGuide() {
+            characterGuide.classList.toggle('hidden');
         }
         
         // Create character guide display
@@ -254,14 +368,21 @@
             return item;
         }
         
-        // Add a new random level 1-3 item
-        function addNewItem() {
+        // Add a new item with specified or random level
+        function addNewItem(specificLevel) {
             if (items.length >= 25) {
                 alert("The board is full! Merge some items to make space.");
                 return;
             }
             
-            const level = Math.floor(Math.random() * 3) + 1; // Random level 1-3
+            // Determine level (random 1-3 or specified)
+            let level;
+            if (specificLevel) {
+                level = specificLevel;
+            } else {
+                level = Math.floor(Math.random() * 3) + 1; // Random level 1-3
+            }
+            
             const character = characters.find(c => c.level === level);
             
             // Find an empty position
@@ -306,6 +427,50 @@
             const newItem = createItemElement(character, x, y);
             gameBoard.appendChild(newItem);
             items.push(newItem);
+            
+            // Update highest level if needed
+            if (level > highestLevel) {
+                updateHighestLevel(level);
+            }
+        }
+        
+        // Merge all possible items
+        function mergeAllItems() {
+            let merged = true;
+            
+            // Continue merging until no more merges are possible
+            while (merged) {
+                merged = false;
+                
+                // Group items by level
+                const itemsByLevel = {};
+                
+                items.forEach(item => {
+                    const level = parseInt(item.dataset.level);
+                    if (!itemsByLevel[level]) {
+                        itemsByLevel[level] = [];
+                    }
+                    itemsByLevel[level].push(item);
+                });
+                
+                // Try to merge items of each level
+                for (const level in itemsByLevel) {
+                    while (itemsByLevel[level].length >= 2) {
+                        // Take two items and merge them
+                        const item1 = itemsByLevel[level].pop();
+                        const item2 = itemsByLevel[level].pop();
+                        
+                        mergeItems(item1, item2);
+                        merged = true;
+                        
+                        // Break loop after one merge and restart the whole process
+                        // This prevents issues with the items array changing during iteration
+                        break;
+                    }
+                    
+                    if (merged) break;
+                }
+            }
         }
         
         // Handle drag start
@@ -449,6 +614,19 @@
             // Update score
             updateScore(score + newLevel * 10);
             
+            // Update highest level if needed
+            if (newLevel > highestLevel) {
+                updateHighestLevel(newLevel);
+                
+                // If a new level is unlocked and it's <= 10, add it to the selector
+                if (newLevel <= 10 && !Array.from(itemLevelSelect.options).some(opt => parseInt(opt.value) === newLevel)) {
+                    const option = document.createElement('option');
+                    option.value = newLevel;
+                    option.textContent = `Level ${newLevel}: ${newCharacter.name}`;
+                    itemLevelSelect.appendChild(option);
+                }
+            }
+            
             // Special animation for merge
             newItem.style.transform = 'scale(1.2)';
             setTimeout(() => {
@@ -458,7 +636,7 @@
             // If reached the max level, show victory
             if (newLevel === characters.length) {
                 setTimeout(() => {
-                    alert(`Congratulations! You've merged all the way to ${newCharacter.name}! Final score: ${score}`);
+                    alert(`Congratulations! You've merged all the way to the maximum level ${newLevel}! Final score: ${score}`);
                 }, 500);
             }
         }
@@ -467,6 +645,12 @@
         function updateScore(newScore) {
             score = newScore;
             scoreDisplay.textContent = score;
+        }
+        
+        // Update the highest level display
+        function updateHighestLevel(newLevel) {
+            highestLevel = newLevel;
+            highestLevelDisplay.textContent = highestLevel;
         }
         
         // Reset the game
@@ -479,8 +663,9 @@
             items = [];
             nextItemId = 0;
             
-            // Reset score
+            // Reset score and highest level
             updateScore(0);
+            updateHighestLevel(1);
             
             // Add initial items
             for (let i = 0; i < 3; i++) {
